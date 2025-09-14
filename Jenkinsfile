@@ -8,8 +8,8 @@ pipeline {
     environment {
         github_token = credentials('githubcredentails')
         AWS_REGION = 'us-east-1' 
-        CLUSTER_NAME = 'my-ecs-cluster'
-        SERVICE_NAME = 'my-ecs-service' 
+        CLUSTER_NAME = 'swayatt-cluster'
+        SERVICE_NAME = 'swayatt-service' 
         TASK_FAMILY  = 'logoswayatt-task' 
         IMAGE_NAME   = "muskaan810/logoswayatt"
     }
