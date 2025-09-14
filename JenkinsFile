@@ -83,19 +83,14 @@ pipeline {
 
   post {
       always {
-        script {
-            if(fileExists("solar-system-manifest")) {
-            sh "rm -rf solar-system-manifest"
-          }
-        }
-                      publishHTML(target: [
-                              allowMissing: false,
-                              alwaysLinkToLastBuild: true,
-                              keepAll: true,
-                              reportDir: 'coverage/lcov-report/',
-                              reportFiles: 'index.html',
-                              reportName: 'Code Coverage Html Report'
-                          ]) 
+                      // publishHTML(target: [
+                      //         allowMissing: false,
+                      //         alwaysLinkToLastBuild: true,
+                      //         keepAll: true,
+                      //         reportDir: 'coverage/lcov-report/',
+                      //         reportFiles: 'index.html',
+                      //         reportName: 'Code Coverage Html Report'
+                      //     ]) 
 
                                         publishHTML(target: [
                               allowMissing: false,
