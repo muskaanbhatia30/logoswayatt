@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-       nodejs "node JS"  // Ensure this matches your NodeJS installation name in Jenkins
+       nodejs "node JS"  // Make sure this matches your Jenkins NodeJS tool name
     }
 
     environment {
@@ -23,21 +23,14 @@ pipeline {
             }
         }
 
-        // Optional: auto fix npm vulnerabilities
-        // stage('Auto Fix (Safe Upgrades)') {
-        //     steps {
-        //         sh 'npm audit fix || true'
-        //     }
-        // }
-
         stage('Dependency Scanning') {
-            parallel {
-                stage('npm Dependency Audit') {
+            parallel(
+                "npm Dependency Audit": {
                     steps {
                         sh 'npm audit --audit-level=critical'
                     }
-                }
-                stage('OWASP Dependency-Check Vulnerabilities') {
+                },
+                "OWASP Dependency-Check Vulnerabilities": {
                     steps {
                         dependencyCheck additionalArguments: '''
                             -o './'
@@ -49,23 +42,8 @@ pipeline {
                         dependencyCheckPublisher pattern: 'dependency-check-report.xml'
                     }
                 }
-            }
+            )
         }
-
-        // Optional unit testing and coverage
-        // stage('Unit Testing') {
-        //     options { retry(2) }
-        //     steps {
-        //         sh 'npm test'
-        //     }
-        // }
-        // stage('Code Coverage') {
-        //     steps {
-        //         catchError(buildResult: 'SUCCESS', message: 'It will be fixed later', stageResult: 'UNSTABLE') {
-        //             sh 'npm run coverage'
-        //         }
-        //     }
-        // }
 
         stage("Build Docker Image") {
             steps {
@@ -88,42 +66,42 @@ pipeline {
                 script {
                   withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Aws-cred']]) {
                     sh """
-            echo "Registering new ECS task definition..."
-            
-            NEW_TASK_DEF='{
-                "family": "${TASK_FAMILY}",
-                "networkMode": "awsvpc",
-                "requiresCompatibilities": ["FARGATE"],
-                "cpu": "256",
-                "memory": "512",
-                "containerDefinitions": [{
-                    "name": "logoswayatt-container",
-                    "image": "${IMAGE_NAME}:${GIT_COMMIT}",
-                    "essential": true,
-                    "portMappings": [{
-                        "containerPort": 3000,
-                        "protocol": "tcp"
-                    }]
-                }]
-            }'
+echo "Registering new ECS task definition..."
 
-            aws ecs register-task-definition \
-                --region ${AWS_REGION} \
-                --cli-input-json "\$NEW_TASK_DEF"
+NEW_TASK_DEF='{
+    "family": "${TASK_FAMILY}",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512",
+    "containerDefinitions": [{
+        "name": "logoswayatt-container",
+        "image": "${IMAGE_NAME}:${GIT_COMMIT}",
+        "essential": true,
+        "portMappings": [{
+            "containerPort": 3000,
+            "protocol": "tcp"
+        }]
+    }]
+}'
 
-            echo "Updating ECS service with new task definition..."
-            REVISION=$(aws ecs describe-task-definition \
-                --task-definition ${TASK_FAMILY} \
-                --query 'taskDefinition.revision' \
-                --output text)
+aws ecs register-task-definition \
+    --region ${AWS_REGION} \
+    --cli-input-json "\$NEW_TASK_DEF"
 
-            aws ecs update-service \
-                --cluster ${CLUSTER_NAME} \
-                --service ${SERVICE_NAME} \
-                --task-definition ${TASK_FAMILY}:$REVISION \
-                --region ${AWS_REGION}
-            """
-                }
+echo "Updating ECS service with new task definition..."
+REVISION=$(aws ecs describe-task-definition \
+    --task-definition ${TASK_FAMILY} \
+    --query 'taskDefinition.revision' \
+    --output text)
+
+aws ecs update-service \
+    --cluster ${CLUSTER_NAME} \
+    --service ${SERVICE_NAME} \
+    --task-definition ${TASK_FAMILY}:$REVISION \
+    --region ${AWS_REGION}
+"""
+                  }
                 }
             }
         }
