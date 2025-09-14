@@ -1,61 +1,53 @@
-# Logo Server
+## Jenkins CI/CD Pipeline for AWS ECS
 
-A simple Express.js web server that serves the Swayatt logo image.
+This project automates build → scan → Docker push → ECS deploy → monitor for a Node.js app using Jenkins.
 
-## What is this app?
+## Workflow
 
-This is a lightweight Node.js application built with Express.js that serves a single logo image (`logoswayatt.png`) when accessed through a web browser. When you visit the root URL, the server responds by displaying the Swayatt logo.
+Install Dependencies – npm install
 
-## Prerequisites
+Security Scan – npm audit + OWASP Dependency-Check (HTML report)
 
-- Node.js (version 12 or higher)
-- npm (Node Package Manager)
+Build & Push Docker Image – Tagged with Git commit and pushed to DockerHub
 
-## Installation
+Deploy to AWS ECS (Fargate) – Registers a new task definition and updates the service
 
-1. Clone or download this repository
-2. Navigate to the project directory:
-   ```bash
-   cd "devops task"
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
+Monitor – Fetches CPU/Memory metrics from CloudWatch
 
-## How to Start the App
+Report – Publishes OWASP HTML report in Jenkins
 
-Run the following command:
-```bash
-npm start
-```
+## Tools & Services
 
-The server will start and display:
-```
-Server running on http://localhost:3000
-```
+Jenkins – CI/CD automation
 
-## Usage
+Node.js & npm – Build & dependencies
 
-Once the server is running, open your web browser and navigate to:
-```
-http://localhost:3000
-```
+OWASP Dependency-Check – Vulnerability scan
 
-You will see the Swayatt logo displayed in your browser.
+Docker + DockerHub – Containerization & registry
 
-## Project Structure
+AWS ECS & CloudWatch – Deployment & monitoring
 
-```
-├── app.js              # Main server file
-├── package.json        # Project dependencies and scripts
-├── logoswayatt.png     # Logo image file
-└── README.md          # This file
-```
+AWS CLI & JQ – ECS task definition updates
 
-## Technical Details
+HTML Publisher Plugin – Publish OWASP report
 
-- **Framework**: Express.js
-- **Port**: 3000
-- **Endpoint**: GET `/` - serves the logo image
-- **File served**: `logoswayatt.png`
+
+## Possible Improvements
+
+Can perform testing through sonarqube SonarQube code analysis
+Enable Alerts using metrics logs through cloud watch
+
+## Jenkins Pipeline
+![alt text](image-1.png)
+![alt text](image-3.png)
+
+
+## Dependency report
+![alt text](image-2.png)
+
+## Application  
+
+Accessible on url : http://3.234.222.38:3000/
+
+![alt text](image-4.png)
