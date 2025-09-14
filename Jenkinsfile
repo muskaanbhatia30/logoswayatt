@@ -85,7 +85,8 @@ pipeline {
 
         stage("Deploy to ECS") {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                script {
+                  withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Aws-cred']]) {
                     sh """
             echo "Registering new ECS task definition..."
             
@@ -122,6 +123,7 @@ pipeline {
                 --task-definition ${TASK_FAMILY}:$REVISION \
                 --region ${AWS_REGION}
             """
+                }
                 }
             }
         }
