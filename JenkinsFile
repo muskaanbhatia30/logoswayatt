@@ -63,6 +63,7 @@ pipeline {
             
       //   }
 
+
       stage (" Building docker image"){
         steps{
           sh "docker build -t muskaan810/logoswayatt:$GIT_COMMIT ."
@@ -78,11 +79,6 @@ pipeline {
           }
         }
       }
-
-
-
-
-
   } 
 
   post {
