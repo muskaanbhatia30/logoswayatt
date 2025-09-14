@@ -60,6 +60,50 @@ pipeline {
             }
         }
 
+        // adding stage to deploy it to ecs
+        stage("Deploy to ECS") {
+                      steps {
+                          withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Aws-cred']]) {
+                              script {
+                                  sh """
+                                  echo "Creating ECS task definition JSON..."
+                                  cat <<EOF > taskdef.json
+                  {
+                    "family": "${TASK_FAMILY}",
+                    "networkMode": "awsvpc",
+                    "requiresCompatibilities": ["FARGATE"],
+                    "cpu": "256",
+                    "memory": "512",
+                    "containerDefinitions": [
+                      {
+                        "name": "logoswayatt-container",
+                        "image": "${IMAGE_NAME}:${GIT_COMMIT}",
+                        "essential": true,
+                        "portMappings": [
+                          {
+                            "containerPort": 3000,
+                            "protocol": "tcp"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                  EOF
+
+                echo "Registering ECS task definition..."
+                aws ecs register-task-definition --cli-input-json file://taskdef.json --region $AWS_REGION
+
+                REVISION=$(aws ecs describe-task-definition --task-definition $TASK_FAMILY --query 'taskDefinition.revision' --output text)
+
+                echo "Updating ECS service to task revision: $REVISION"
+                aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition ${TASK_FAMILY}:\$REVISION --region $AWS_REGION
+                """
+            }
+        }
+    }
+}
+
+
         
     }
 
