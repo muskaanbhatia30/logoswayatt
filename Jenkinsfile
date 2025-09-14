@@ -85,7 +85,7 @@ pipeline {
 
         stage("Deploy to ECS") {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Aws-cred']]) {
                     sh """
                     echo "Registering new ECS task definition..."
                     NEW_TASK_DEF=\$(jq -n --arg IMAGE "${IMAGE_NAME}:${GIT_COMMIT}" '{
