@@ -114,6 +114,41 @@ pipeline {
       }
 
 
+      stage('Monitor ECS Container') {
+    steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Aws-cred']]) {
+            script {
+                sh '''
+                echo "Fetching ECS CPU and Memory metrics from CloudWatch..."
+
+                # CPU Utilization (average over last 5 minutes)
+                aws cloudwatch get-metric-statistics \
+                    --metric-name CPUUtilization \
+                    --namespace AWS/ECS \
+                    --statistics Average \
+                    --dimensions Name=ClusterName,Value=$CLUSTER_NAME Name=ServiceName,Value=$SERVICE_NAME \
+                    --start-time $(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+                    --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+                    --period 300 \
+                    --region $AWS_REGION
+
+                # Memory Utilization
+                aws cloudwatch get-metric-statistics \
+                    --metric-name MemoryUtilization \
+                    --namespace AWS/ECS \
+                    --statistics Average \
+                    --dimensions Name=ClusterName,Value=$CLUSTER_NAME Name=ServiceName,Value=$SERVICE_NAME \
+                    --start-time $(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+                    --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+                    --period 300 \
+                    --region $AWS_REGION
+                '''
+            }
+        }
+    }
+}
+
+
         
     }
 
