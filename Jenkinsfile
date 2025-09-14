@@ -61,47 +61,57 @@ pipeline {
         }
 
         // adding stage to deploy it to ecs
+
         stage("Deploy to ECS") {
-                      steps {
-                          withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Aws-cred']]) {
-                              script {
-                                  sh """
-                                  echo "Creating ECS task definition JSON..."
-                                  cat <<EOF > taskdef.json
-                  {
-                    "family": "${TASK_FAMILY}",
-                    "networkMode": "awsvpc",
-                    "requiresCompatibilities": ["FARGATE"],
-                    "cpu": "256",
-                    "memory": "512",
-                    "containerDefinitions": [
-                      {
-                        "name": "logoswayatt-container",
-                        "image": "${IMAGE_NAME}:${GIT_COMMIT}",
-                        "essential": true,
-                        "portMappings": [
-                          {
-                            "containerPort": 3000,
-                            "protocol": "tcp"
-                          }
-                        ]
-                      }
-                    ]
+          steps {
+              withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Aws-cred']]) {
+                  script {
+                      // Create ECS task definition JSON
+                      sh '''
+                      echo "Registering new ECS task definition..."
+                      NEW_TASK_DEF=$(jq -n --arg FAMILY "$TASK_FAMILY" --arg IMAGE "${IMAGE_NAME}:${GIT_COMMIT}" '{
+                          family: $FAMILY,
+                          networkMode: "awsvpc",
+                          requiresCompatibilities: ["FARGATE"],
+                          cpu: "256",
+                          memory: "512",
+                          containerDefinitions: [{
+                              name: "logoswayatt-container",
+                              image: $IMAGE,
+                              essential: true,
+                              portMappings: [{
+                                  containerPort: 3000,
+                                  protocol: "tcp"
+                              }]
+                          }]
+                      }')
+                      
+                      echo "$NEW_TASK_DEF" > taskdef.json
+                      
+                      # Register ECS task definition
+                      aws ecs register-task-definition \
+                          --cli-input-json file://taskdef.json \
+                          --region $AWS_REGION
+                      
+                      # Get latest task revision
+                      REVISION=$(aws ecs describe-task-definition \
+                          --task-definition $TASK_FAMILY \
+                          --query 'taskDefinition.revision' \
+                          --output text)
+                      
+                      echo "Updating ECS service to new task revision: $REVISION"
+                      
+                      # Update ECS service
+                      aws ecs update-service \
+                          --cluster $CLUSTER_NAME \
+                          --service $SERVICE_NAME \
+                          --task-definition $TASK_FAMILY:$REVISION \
+                          --region $AWS_REGION
+                      '''
                   }
-                  EOF
-
-                echo "Registering ECS task definition..."
-                aws ecs register-task-definition --cli-input-json file://taskdef.json --region $AWS_REGION
-
-                REVISION=$(aws ecs describe-task-definition --task-definition $TASK_FAMILY --query 'taskDefinition.revision' --output text)
-
-                echo "Updating ECS service to task revision: $REVISION"
-                aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition ${TASK_FAMILY}:\$REVISION --region $AWS_REGION
-                """
-            }
-        }
-    }
-}
+              }
+          }
+      }
 
 
         
